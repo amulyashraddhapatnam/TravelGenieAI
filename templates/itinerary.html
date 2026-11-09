@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %}Itinerary: {{ data.destination }} - TravelGenie AI{% endblock %}
+
+{% block content %}
+<div id="printableArea">
+    
+    <!-- Hero Header Card -->
+    <div class="card glass-card card-destination border-0 shadow-sm rounded-4 mb-4 overflow-hidden p-4 p-md-5">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                    <span class="badge bg-primary-subtle text-primary fw-bold"><i class="fa-solid fa-clock me-1"></i> {{ data.days }} Days</span>
+                    <span class="badge bg-info-subtle text-info fw-bold"><i class="fa-solid fa-calendar-days me-1"></i> {{ trip.start_date }} to {{ trip.end_date }}</span>
+                    <span class="badge bg-secondary-subtle text-secondary fw-bold"><i class="fa-solid fa-user-group me-1"></i> {{ trip.num_travelers }} Traveler(s)</span>
+                    <span class="badge bg-success-subtle text-success fw-bold"><i class="fa-solid fa-wallet me-1"></i> Total: {{ data.currency }} {{ trip.budget_amount }}</span>
+                    <span class="badge bg-dark-subtle text-dark fw-bold"><i class="fa-solid fa-user-tag me-1"></i> Per Person: {{ data.currency }} {{ "%.2f"|format(trip.budget_amount / trip.num_travelers) }}</span>
+                    {% if trip.is_student %}
+                        <span class="badge bg-warning-subtle text-warning fw-bold"><i class="fa-solid fa-graduation-cap me-1"></i> Student Mode</span>
+                    {% endif %}
+                </div>
+                <h1 class="display-4 fw-extrabold mb-1 heading-destination">{{ data.destination }}</h1>
+                <p class="mb-0 heading-destination text-opacity-75"><i class="fa-solid fa-suitcase me-1"></i> {{ trip.travel_type }} • {{ trip.interests }}</p>
+            </div>
+            
+            <div class="d-flex flex-wrap gap-2 no-print">
+                <button class="btn btn-outline-primary fw-semibold rounded-pill" onclick="toggleFavorite({{ trip.id }})">
+                    <i class="fa-{{ 'solid' if trip.is_favorite else 'regular' }} fa-heart text-danger me-1"></i> Favorite
+                </button>
+                <button class="btn btn-success fw-semibold rounded-pill text-white" onclick="downloadPDF()">
+                    <i class="fa-solid fa-file-pdf me-1"></i> Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Widgets Row: Weather, AI Suggestion, Currency -->
+    <div class="row g-3 mb-4">
+        <!-- Weather Card -->
+        <div class="col-md-4">
+            <div class="card glass-card card-weather h-100 p-3 hover-lift">
+                <div class="d-flex align-items-center gap-3">
+                    <i class="fa-solid fa-cloud-sun heading-weather display-5"></i>
+                    <div>
+                        <h6 class="text-muted mb-0">Weather Forecast</h6>
+                        <h3 class="fw-bold mb-0 heading-weather">{{ weather.current_temp }}</h3>
+                        <small class="text-secondary">{{ weather.forecast }}</small>
+                    </div>
+                </div>
+                <hr class="my-2 border-light-subtle">
+                <div class="d-flex justify-content-between small text-muted">
+                    <span><i class="fa-solid fa-droplet me-1"></i>Humidity: {{ weather.humidity }}</span>
+                    <span><i class="fa-solid fa-cloud-rain me-1"></i>Rain: {{ weather.rain_chance }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Suggestion Card -->
+        <div class="col-md-4">
+            <div class="card glass-card card-protip h-100 p-3 hover-lift">
+                <h6 class="fw-bold heading-protip mb-2"><i class="fa-solid fa-robot me-2"></i>✨ AI Travel Pro-Tip</h6>
+                <p class="small text-muted mb-1"><strong class="heading-protip">Best Month:</strong> {{ data.ai_suggestions.best_month if data.ai_suggestions else 'Oct - Mar' }}</p>
+                <p class="small text-muted mb-0"><strong class="heading-protip">Must Try:</strong> {{ data.ai_suggestions.local_dish_must_try if data.ai_suggestions else 'Local Specialties' }}</p>
+            </div>
+        </div>
+
+        <!-- Currency & Rates -->
+        <div class="col-md-4">
+            <div class="card glass-card card-budget h-100 p-3 hover-lift">
+                <h6 class="text-muted mb-1"><i class="fa-solid fa-coins me-2 heading-budget"></i>Currency Exchange Info</h6>
+                <h5 class="fw-bold mb-1 heading-budget">{{ data.currency_info.currency_name if data.currency_info else data.currency }}</h5>
+                <p class="small text-secondary mb-0">{{ data.currency_info.exchange_rate if data.currency_info else 'Standard local rates apply' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="card glass-card card-map shadow-sm mb-4 overflow-hidden">
+        <div class="card-header bg-transparent fw-bold py-3 heading-map"><i class="fa-solid fa-map-location-dot me-2"></i>Interactive Location Map</div>
+        <div class="card-body p-0">
+            <div id="tripMap" style="width: 100%; height: 380px; z-index: 1;"></div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="row g-4">
+        <!-- Daily Itinerary -->
+        <div class="col-lg-8">
+            <h4 class="fw-bold mb-3 heading-destination"><i class="fa-solid fa-calendar-day me-2"></i>Day-by-Day Itinerary</h4>
+            
+            {% for day in data.day_by_day %}
+            <div class="card glass-card card-destination mb-3 p-4 hover-lift">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-primary-subtle heading-destination fs-6">Day {{ day.day }}</span>
+                    <h5 class="fw-bold mb-0 heading-destination">{{ day.theme }}</h5>
+                </div>
+                <div class="mb-2"><strong class="heading-protip"><i class="fa-solid fa-sun me-1"></i> Morning:</strong> <span class="text-secondary">{{ day.morning }}</span></div>
+                <div class="mb-2"><strong class="heading-destination"><i class="fa-solid fa-utensils me-1"></i> Lunch:</strong> <span class="text-secondary">{{ day.lunch }}</span></div>
+                <div class="mb-2"><strong class="heading-weather"><i class="fa-solid fa-cloud-sun me-1"></i> Afternoon:</strong> <span class="text-secondary">{{ day.afternoon }}</span></div>
+                <div class="mb-2"><strong class="heading-protip"><i class="fa-solid fa-moon me-1"></i> Evening:</strong> <span class="text-secondary">{{ day.evening }}</span></div>
+                <hr class="my-2 border-light-subtle">
+                <div class="fw-bold heading-budget text-end"><i class="fa-solid fa-wallet me-1"></i> Est. Cost: {{ day.estimated_cost }}</div>
+            </div>
+            {% endfor %}
+
+            <!-- AI Optimizer Prompt Bar -->
+            <div class="card glass-card card-protip p-4 no-print mb-4">
+                <h5 class="fw-bold mb-2 heading-protip"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>Refine Itinerary with AI</h5>
+                <div class="input-group">
+                    <input type="text" id="optimizePrompt" class="form-control" placeholder="e.g., 'Make day 1 more relaxed' or 'Add vegetarian dinner options'">
+                    <button class="btn btn-gradient-primary" onclick="runOptimizer({{ trip.id }})">Optimize</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Widgets -->
+        <div class="col-lg-4">
+            
+            <!-- Budget Breakdown Card -->
+            <div class="card glass-card card-budget p-3 mb-4">
+                <h5 class="fw-bold mb-3 heading-budget"><i class="fa-solid fa-chart-pie me-2"></i>Budget Breakdown</h5>
+                <ul class="list-group list-group-flush small bg-transparent">
+                    <li class="list-group-item d-flex justify-content-between px-0 bg-transparent text-body"><span>🏨 Hotel</span> <strong>{{ data.currency }} {{ data.budget_breakdown.hotel if data.budget_breakdown else 0 }}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between px-0 bg-transparent text-body"><span>🍴 Food</span> <strong>{{ data.currency }} {{ data.budget_breakdown.food if data.budget_breakdown else 0 }}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between px-0 bg-transparent text-body"><span>🚖 Transport</span> <strong>{{ data.currency }} {{ data.budget_breakdown.transport if data.budget_breakdown else 0 }}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between px-0 bg-transparent text-body"><span>🎟️ Tickets</span> <strong>{{ data.currency }} {{ data.budget_breakdown.tickets if data.budget_breakdown else 0 }}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between px-0 bg-transparent text-body"><span>🛍️ Shopping</span> <strong>{{ data.currency }} {{ data.budget_breakdown.shopping if data.budget_breakdown else 0 }}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between px-0 fw-bold border-top heading-budget bg-transparent"><span>Total Planned</span> <span>{{ data.currency }} {{ data.budget_breakdown.total if data.budget_breakdown else trip.budget_amount }}</span></li>
+                </ul>
+            </div>
+
+            <!-- Hotels Card -->
+            <div class="card glass-card card-protip p-3 mb-4">
+                <h5 class="fw-bold mb-3 heading-protip"><i class="fa-solid fa-hotel me-2"></i>Hotels & Stays</h5>
+                {% for hotel in data.hotel_recommendations %}
+                <div class="border-bottom border-light-subtle pb-2 mb-2">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="fw-bold mb-0 heading-destination">{{ hotel.name }}</h6>
+                        <span class="badge bg-warning-subtle text-warning">{{ hotel.rating }}</span>
+                    </div>
+                    <small class="text-muted d-block">{{ hotel.distance }}</small>
+                    <small class="text-secondary d-block">{{ hotel.amenities }}</small>
+                    <span class="badge bg-secondary-subtle text-secondary mt-1">{{ hotel.price }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Restaurants Card -->
+            <div class="card glass-card card-budget p-3 mb-4">
+                <h5 class="fw-bold mb-3 heading-budget"><i class="fa-solid fa-utensils me-2"></i>Food Suggestions</h5>
+                {% if data.restaurant_suggestions %}
+                    <p class="small mb-1 fw-semibold heading-budget">Famous Dishes:</p>
+                    <div class="mb-2">
+                        {% for dish in data.restaurant_suggestions.famous_local_dishes %}
+                            <span class="badge bg-success-subtle heading-budget me-1">{{ dish }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Packing Checklist Card -->
+            <div class="card glass-card card-map p-3 mb-4">
+                <h5 class="fw-bold mb-3 heading-map"><i class="fa-solid fa-list-check me-2"></i>Packing Checklist</h5>
+                <ul class="list-group list-group-flush small bg-transparent">
+                    {% for item in data.packing_checklist %}
+                    <li class="list-group-item px-0 d-flex align-items-center gap-2 border-0 bg-transparent text-body">
+                        <input class="form-check-input" type="checkbox" id="chk_{{ loop.index }}" {{ 'checked' if item.checked }}>
+                        <label for="chk_{{ loop.index }}">{{ item.item }}</label>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Travel Notes Card -->
+            <div class="card glass-card card-destination p-3 mb-4 no-print">
+                <h5 class="fw-bold mb-2 heading-destination"><i class="fa-solid fa-note-sticky me-2"></i>Travel Notes</h5>
+                <textarea id="tripNotes" class="form-control form-control-sm mb-2" rows="3">{{ trip.notes or '' }}</textarea>
+                <button class="btn btn-sm btn-outline-primary w-100 rounded-pill" onclick="saveNotes({{ trip.id }})">Save Notes</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const destName = "{{ data.destination }}";
+    const lat = parseFloat("{{ data.latitude or 20.5937 }}");
+    const lng = parseFloat("{{ data.longitude or 78.9629 }}");
+    const mapPins = {{ data.map_pins|tojson if data.map_pins else '[]' }};
+
+    const map = L.map('tripMap').setView([lat, lng], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    L.marker([lat, lng]).addTo(map).bindPopup(`<b>${destName}</b>`).openPopup();
+
+    if (mapPins.length > 0) {
+        mapPins.forEach(pin => {
+            if(pin.lat && pin.lng) {
+                L.marker([pin.lat, pin.lng]).addTo(map).bindPopup(`<b>${pin.name}</b>`);
+            }
+        });
+    }
+
+    function downloadPDF() {
+        showToast("Generating PDF...");
+        const element = document.getElementById('printableArea');
+        const opt = {
+            margin: 0.3,
+            filename: `TravelGenie AI_${destName}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+
+    function toggleFavorite(tripId) {
+        fetch(`/api/trip/${tripId}/favorite`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    showToast(data.is_favorite ? "Saved to Favorites!" : "Removed from Favorites");
+                    window.location.reload();
+                }
+            });
+    }
+
+    function saveNotes(tripId) {
+        const notes = document.getElementById('tripNotes').value;
+        fetch(`/api/trip/${tripId}/notes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notes: notes })
+        }).then(() => showToast("Notes saved!"));
+    }
+
+    function runOptimizer(tripId) {
+        const promptVal = document.getElementById('optimizePrompt').value;
+        if(!promptVal) return;
+        fetch(`/api/trip/${tripId}/optimize`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: promptVal })
+        }).then(() => window.location.reload());
+    }
+</script>
+{% endblock %}

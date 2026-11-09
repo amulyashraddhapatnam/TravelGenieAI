@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row align-items-center py-5">
+    <div class="col-lg-6">
+        <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-2 rounded-pill mb-3">
+            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> AI-Powered Travel Engine
+        </span>
+        <h1 class="display-4 fw-extrabold mb-3">Craft Personalized Itineraries Across the Globe in Seconds</h1>
+        <p class="lead text-muted mb-2 fs-5" id="typingTagline">Plan Smarter. Travel Better.</p>
+        <p class="text-secondary mb-4">Tailor-made schedules, custom manual budgets, dietary preferences, accessibility support, and interactive maps.</p>
+        
+        <!-- Search Box -->
+        <form action="{{ url_for('planner') }}" method="GET" class="card glass-card p-2 shadow-sm mb-4">
+            <div class="input-group">
+                <span class="input-group-text bg-transparent border-0"><i class="fa-solid fa-location-dot text-primary fs-5"></i></span>
+                <input type="text" name="destination" class="form-control border-0 bg-transparent" placeholder="Where do you want to go? e.g., Jaipur, Paris, Goa" required>
+                <button type="submit" class="btn btn-gradient-primary rounded-pill px-4 fw-bold">Explore Now</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-lg-6 text-center mt-4 mt-lg-0">
+        <div class="card glass-card p-4 shadow-lg hover-lift">
+            <img src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&auto=format&fit=crop&q=80" class="img-fluid rounded-4 mb-3" alt="Travel Globe">
+            <h5 class="fw-bold mb-1">Instant Itinerary Generation</h5>
+            <p class="text-muted small mb-0">Gemini AI builds full schedules with hotel & dining recommendations tailored to your exact budget.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Popular Destinations Section (Horizontal Scrollable Layout with Hover Animations & Light Green Explore Buttons) -->
+<div class="my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0"><i class="fa-solid fa-fire text-danger me-2"></i>Popular Destinations</h3>
+            <p class="text-muted small mb-0">Top choices for quick AI trip planning (Scroll to explore more)</p>
+        </div>
+    </div>
+
+    <!-- Horizontal scrollable flex row -->
+    <div class="d-flex flex-nowrap overflow-auto gap-3 pb-3" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
+        
+        <!-- Dynamically rendered from `popular` if available -->
+        {% if popular %}
+            {% for place in popular %}
+            <div class="card glass-card border-0 shadow-sm rounded-4 flex-shrink-0 hover-lift p-3" style="width: 260px;">
+                <div class="position-relative mb-3 rounded-3 overflow-hidden" style="height: 140px; background: #e2e8f0;">
+                    <img src="{{ place.image }}" alt="{{ place.name }}" class="w-100 h-100 object-fit-cover">
+                    <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white">{{ place.country }}</span>
+                </div>
+                <h6 class="fw-bold mb-1 heading-destination">{{ place.name }}</h6>
+                <p class="small text-muted mb-3 text-truncate"><i class="fa-solid fa-globe me-1"></i>Best: {{ place.best_time }}</p>
+                <a href="{{ url_for('planner', destination=place.name) }}" class="btn btn-success-subtle text-success fw-semibold w-100 rounded-pill btn-sm hover-lift">
+                    <i class="fa-solid fa-arrow-right me-1"></i> Explore {{ place.name.split(',')[0] }}
+                </a>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Explicitly included popular destinations -->
+        <div class="card glass-card border-0 shadow-sm rounded-4 flex-shrink-0 hover-lift p-3" style="width: 260px;">
+            <div class="position-relative mb-3 rounded-3 overflow-hidden" style="height: 140px; background: #e2e8f0;">
+                <img src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80" alt="Paris" class="w-100 h-100 object-fit-cover">
+                <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white">France</span>
+            </div>
+            <h6 class="fw-bold mb-1 heading-destination">Paris, France</h6>
+            <p class="small text-muted mb-3 text-truncate">Art, architecture & gourmet dining</p>
+            <a href="{{ url_for('planner', destination='Paris') }}" class="btn btn-success-subtle text-success fw-semibold w-100 rounded-pill btn-sm hover-lift">
+                <i class="fa-solid fa-arrow-right me-1"></i> Explore Paris
+            </a>
+        </div>
+
+        <div class="card glass-card border-0 shadow-sm rounded-4 flex-shrink-0 hover-lift p-3" style="width: 260px;">
+            <div class="position-relative mb-3 rounded-3 overflow-hidden" style="height: 140px; background: #e2e8f0;">
+                <img src="https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=600&q=80" alt="Tokyo" class="w-100 h-100 object-fit-cover">
+                <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white">Japan</span>
+            </div>
+            <h6 class="fw-bold mb-1 heading-destination">Tokyo, Japan</h6>
+            <p class="small text-muted mb-3 text-truncate">Tradition meets futuristic tech</p>
+            <a href="{{ url_for('planner', destination='Tokyo') }}" class="btn btn-success-subtle text-success fw-semibold w-100 rounded-pill btn-sm hover-lift">
+                <i class="fa-solid fa-arrow-right me-1"></i> Explore Tokyo
+            </a>
+        </div>
+
+        <div class="card glass-card border-0 shadow-sm rounded-4 flex-shrink-0 hover-lift p-3" style="width: 260px;">
+            <div class="position-relative mb-3 rounded-3 overflow-hidden" style="height: 140px; background: #e2e8f0;">
+                <img src="https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80" alt="New York" class="w-100 h-100 object-fit-cover">
+                <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white">USA</span>
+            </div>
+            <h6 class="fw-bold mb-1 heading-destination">New York, USA</h6>
+            <p class="small text-muted mb-3 text-truncate">The city that never sleeps</p>
+            <a href="{{ url_for('planner', destination='New York') }}" class="btn btn-success-subtle text-success fw-semibold w-100 rounded-pill btn-sm hover-lift">
+                <i class="fa-solid fa-arrow-right me-1"></i> Explore New York
+            </a>
+        </div>
+
+        <div class="card glass-card border-0 shadow-sm rounded-4 flex-shrink-0 hover-lift p-3" style="width: 260px;">
+            <div class="position-relative mb-3 rounded-3 overflow-hidden" style="height: 140px; background: #e2e8f0;">
+                <img src="https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=600&q=80" alt="Dubai" class="w-100 h-100 object-fit-cover">
+                <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white">UAE</span>
+            </div>
+            <h6 class="fw-bold mb-1 heading-destination">Dubai, UAE</h6>
+            <p class="small text-muted mb-3 text-truncate">Luxury shopping & desert safaris</p>
+            <a href="{{ url_for('planner', destination='Dubai') }}" class="btn btn-success-subtle text-success fw-semibold w-100 rounded-pill btn-sm hover-lift">
+                <i class="fa-solid fa-arrow-right me-1"></i> Explore Dubai
+            </a>
+        </div>
+
+        <div class="card glass-card border-0 shadow-sm rounded-4 flex-shrink-0 hover-lift p-3" style="width: 260px;">
+            <div class="position-relative mb-3 rounded-3 overflow-hidden" style="height: 140px; background: #e2e8f0;">
+                <img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80" alt="Bali" class="w-100 h-100 object-fit-cover">
+                <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 text-white">Indonesia</span>
+            </div>
+            <h6 class="fw-bold mb-1 heading-destination">Bali, Indonesia</h6>
+            <p class="small text-muted mb-3 text-truncate">Tropical paradise & serene temples</p>
+            <a href="{{ url_for('planner', destination='Bali') }}" class="btn btn-success-subtle text-success fw-semibold w-100 rounded-pill btn-sm hover-lift">
+                <i class="fa-solid fa-arrow-right me-1"></i> Explore Bali
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

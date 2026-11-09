@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TravelGenie AI - Plan Smarter. Travel Better.{% endblock %}</title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <!-- Option 1: Ambient Floating Background Orbs -->
+    <div class="bg-ambient-wrapper">
+        <div class="orb-1"></div>
+        <div class="orb-2"></div>
+    </div>
+    
+    <!-- Floating Glassmorphic Navbar -->
+    <nav class="navbar navbar-expand-lg sticky-top navbar-glass shadow-sm py-2">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('home') }}">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" alt="TravelGenie AI" style="height: 42px; width: auto;" class="me-1" id="genieLogoBase64">
+                <span class="fs-4 brand-text">TravelGenie <span class="brand-text-ai">AI</span></span>
+            </a>
+
+<script>
+    // Automatically loads your logo.png via JavaScript from the static folder to bypass Flask static routing bugs
+    window.addEventListener('DOMContentLoaded', () => {
+        const img = document.getElementById('genieLogoBase64');
+        const realImg = new Image();
+        realImg.src = "{{ url_for('static', filename='logo.png') }}";
+        realImg.onload = () => { img.src = realImg.src; };
+    });
+</script>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav ms-auto align-items-center gap-1">
+                    <li class="nav-item"><a class="nav-link nav-link-custom {{ 'active' if request.endpoint == 'home' }}" href="{{ url_for('home') }}">Home</a></li>
+                    {% if session.get('user_id') %}
+                        <li class="nav-item"><a class="nav-link nav-link-custom {{ 'active' if request.endpoint == 'planner' }}" href="{{ url_for('planner') }}">Plan Trip</a></li>
+                        <li class="nav-item"><a class="nav-link nav-link-custom {{ 'active' if request.endpoint == 'my_trips' }}" href="{{ url_for('my_trips') }}">My Trips</a></li>
+                    {% endif %}
+                    <li class="nav-item"><a class="nav-link nav-link-custom {{ 'active' if request.endpoint == 'about' }}" href="{{ url_for('about') }}">About</a></li>
+                    <li class="nav-item ms-2">
+                        <button class="btn btn-outline-theme btn-sm rounded-circle p-2" id="themeToggleBtn" title="Toggle Light/Dark Theme">
+                            <i class="fa-solid fa-moon" id="themeIcon"></i>
+                        </button>
+                    </li>
+                    {% if session.get('user_id') %}
+                        <li class="nav-item ms-2">
+                            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item ms-2">
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-brand btn-sm rounded-pill px-3">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('register') }}" class="btn btn-gradient-primary btn-sm rounded-pill px-3 text-white">Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Toast Notifications Area -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+        <div id="appToast" class="toast align-items-center text-white bg-success border-0 shadow-lg rounded-3" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body fs-6" id="toastMessage">Success!</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="container my-4 flex-grow-1">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3 shadow-sm border-0" role="alert">
+                        <i class="fa-solid fa-circle-info me-2"></i> {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Scroll To Top Button -->
+    <button id="scrollTopBtn" class="btn btn-gradient-primary text-white btn-lg rounded-circle shadow position-fixed bottom-0 end-0 m-4 d-none" style="z-index: 99;">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <!-- Custom Updated Footer -->
+    <footer class="footer-custom mt-auto py-4 border-top">
+        <div class="container text-center">
+            <h5 class="fw-bold mb-1"><span class="brand-text">TravelGenie <span class="brand-text-ai">AI</span></span></h5>
+            <p class="fst-italic text-muted small mb-2">Plan Smarter. Travel Better.</p>
+            <p class="mb-2 text-body-secondary small">
+                Crafted with ❤️ by <strong class="text-primary">Amulya Shraddha Patnam</strong><br>
+                Built using Flask, Gemini AI, Leaflet JS & OpenWeatherMap
+            </p>
+            <small class="text-muted">© 2026 TravelGenie AI. All rights reserved.</small>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Plan Trip - TravelGenie AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card glass-card shadow-lg overflow-hidden border-0">
+            <!-- Updated Header Container & Text Classes for High Contrast -->
+            <div class="planner-header-card p-4 text-center">
+                <h3 class="planner-title fs-3 mb-1">
+                    <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Design Your Custom Trip
+                </h3>
+                <p class="planner-subtitle mb-0">
+                    Set your manual budget, duration, dietary preferences, and travel style.
+                </p>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+                
+                <!-- Skeleton Loader Animation while AI is Thinking -->
+                <div id="aiLoader" class="d-none text-center py-5">
+                    <div class="spinner-grow text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+                    <h4 class="fw-bold text-primary mb-2" id="loaderText">TravelGenie AI is Thinking...</h4>
+                    <p class="text-muted small">Curating custom hotels, local delicacies, budget breakdowns, and safety tips.</p>
+                    <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 100%"></div>
+                    </div>
+                </div>
+
+                <form id="plannerForm" action="{{ url_for('planner') }}" method="POST" class="needs-validation" novalidate>
+                    
+                    <!-- Destination, Days, Start Date & Travelers -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold"><i class="fa-solid fa-location-dot me-1 text-primary"></i> Destination</label>
+                            <input type="text" name="destination" class="form-control form-control-lg" placeholder="e.g. Goa, Paris, Manali, Kyoto" value="{{ preset_destination }}" required>
+                            <div class="invalid-feedback">Enter a valid destination.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold"><i class="fa-solid fa-calendar-days me-1 text-primary"></i> Days</label>
+                            <input type="number" name="days" class="form-control form-control-lg" min="1" max="30" value="3" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold"><i class="fa-solid fa-user-group me-1 text-primary"></i> Travelers</label>
+                            <input type="number" name="num_travelers" class="form-control form-control-lg" min="1" max="50" value="1" required>
+                        </div>
+                    </div>
+
+                    <!-- Travel Start Date -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-calendar me-1 text-primary"></i> Start Date of Travel</label>
+                        <input type="date" name="start_date" class="form-control form-control-lg" value="{{ today_date }}" required>
+                    </div>
+
+                    <!-- Manual Budget Input & Currency Select -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold"><i class="fa-solid fa-wallet me-1 text-success"></i> Manual Budget Amount</label>
+                            <input type="number" name="budget_amount" class="form-control form-control-lg" placeholder="e.g. 20000" min="500" required>
+                            <div class="invalid-feedback">Budget can't be empty.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold"><i class="fa-solid fa-money-bill-transfer me-1 text-success"></i> Currency</label>
+                            <select name="currency" class="form-select form-select-lg">
+                                <option value="INR" selected>INR (₹)</option>
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="GBP">GBP (£)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Student Special Banner -->
+                    <div class="card bg-info bg-opacity-10 border-info mb-4 rounded-3">
+                        <div class="card-body d-flex align-items-center justify-content-between py-2">
+                            <div>
+                                <h6 class="fw-bold text-info-emphasis mb-0"><i class="fa-solid fa-graduation-cap me-2"></i>Student / Backpacker Special Mode</h6>
+                                <small class="text-muted">Prioritize hostels, street food, public transit, and group discounts.</small>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input fs-4" type="checkbox" name="is_student" id="studentSwitch">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Travel Style -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold"><i class="fa-solid fa-user-group me-1 text-primary"></i> Travel Style</label>
+                        <select name="travel_type" class="form-select form-select-lg">
+                            <option value="Solo Explorer">Solo Explorer</option>
+                            <option value="Friends Group" selected>Friends Group</option>
+                            <option value="Couple / Romantic">Couple / Romantic</option>
+                            <option value="Family Friendly">Family Friendly</option>
+                        </select>
+                    </div>
+
+                    <!-- Dietary & Preferences -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold"><i class="fa-solid fa-utensils me-1 text-warning"></i> Dietary Preferences</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <input type="checkbox" class="btn-check" name="dietary" value="Vegetarian" id="diet_1">
+                                <label class="btn btn-outline-warning btn-sm rounded-pill" for="diet_1">Vegetarian</label>
+                                <input type="checkbox" class="btn-check" name="dietary" value="Vegan" id="diet_2">
+                                <label class="btn btn-outline-warning btn-sm rounded-pill" for="diet_2">Vegan</label>
+                                <input type="checkbox" class="btn-check" name="dietary" value="Non-Veg" id="diet_3">
+                                <label class="btn btn-outline-warning btn-sm rounded-pill" for="diet_3">Non-Veg</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold"><i class="fa-solid fa-universal-access me-1 text-purple"></i> Accessibility & Comfort</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <input type="checkbox" class="btn-check" name="accessibility" value="Wheelchair Accessible" id="acc_1">
+                                <label class="btn btn-outline-secondary btn-sm rounded-pill" for="acc_1">Wheelchair</label>
+                                <input type="checkbox" class="btn-check" name="accessibility" value="Kids Friendly" id="acc_2">
+                                <label class="btn btn-outline-secondary btn-sm rounded-pill" for="acc_2">Kids Friendly</label>
+                                <input type="checkbox" class="btn-check" name="accessibility" value="Senior Citizen Friendly" id="acc_3">
+                                <label class="btn btn-outline-secondary btn-sm rounded-pill" for="acc_3">Senior Citizen</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interests Checkboxes -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold d-block"><i class="fa-solid fa-heart me-1 text-danger"></i> Top Interests</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for interest in ['Sightseeing', 'Adventure & Trekking', 'Beach & Water Sports', 'Heritage & Culture', 'Local Street Food', 'Nightlife', 'Relaxation & Spa', 'Photography'] %}
+                                <input type="checkbox" class="btn-check" name="interests" value="{{ interest }}" id="interest_{{ loop.index }}">
+                                <label class="btn btn-outline-primary btn-sm rounded-pill px-3" for="interest_{{ loop.index }}">{{ interest }}</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-gradient-primary btn-lg w-100 rounded-pill shadow py-3 fw-bold">
+                        <i class="fa-solid fa-wand-magic-sparkles me-2"></i> Generate Smart Itinerary
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const plannerForm = document.getElementById('plannerForm');
+    const aiLoader = document.getElementById('aiLoader');
+    const loaderText = document.getElementById('loaderText');
+
+    const loaderPhrases = [
+        "Analyzing best travel routes...",
+        "Finding top-rated hotels and hostels...",
+        "Calculating daily budget breakdown...",
+        "Selecting regional delicacies & local eateries...",
+        "Finalizing weather forecast and safety tips..."
+    ];
+
+    plannerForm.addEventListener('submit', (event) => {
+        if (!plannerForm.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+            plannerForm.classList.add('was-validated');
+            return;
+        }
+
+        plannerForm.classList.add('d-none');
+        aiLoader.classList.remove('d-none');
+
+        let pIdx = 0;
+        setInterval(() => {
+            pIdx = (pIdx + 1) % loaderPhrases.length;
+            loaderText.innerText = loaderPhrases[pIdx];
+        }, 2000);
+    });
+</script>
+{% endblock %}
