@@ -228,18 +228,27 @@ Return ONLY valid JSON matching this schema exactly (no markdown fences, pure JS
     response = requests.post(url, headers=headers, json=payload, timeout=60)
     res_data = response.json()
     
-    # Safe extraction for main itinerary response
-    clean_text = ""
+    # Safe extraction
     try:
         clean_text = res_data['candidates'][0]['content']['parts'][0]['text'].strip()
     except (KeyError, IndexError, TypeError):
-        clean_text = str(res_data)
+        clean_text = "{}"
 
+    # Clean markdown wrappers
     if clean_text.startswith("```json"):
         clean_text = clean_text[7:]
+    if clean_text.startswith("```"):
+        clean_text = clean_text[3:]
     if clean_text.endswith("```"):
         clean_text = clean_text[:-3]
-    return clean_text.strip()
+    clean_text = clean_text.strip()
+
+    # Safe JSON decoding with a fallback so it never crashes with 500 errors
+    try:
+        return json.loads(clean_text)
+    except json.JSONDecodeError:
+        # If Gemini didn't return valid JSON, wrap the text into a safe dictionary
+        return {"itinerary": clean_text}
 
 # --- Routes ---
 @app.route('/')
