@@ -121,13 +121,13 @@ def generate_ai_itinerary(destination, days, start_date, end_date, num_travelers
         """
 
     prompt = f"""
-You are an expert travel consultant for TravelGenie AI. Create a complete, fully detailed travel itinerary in JSON for a trip to {destination} for exactly {days} days.
-CRITICAL INSTRUCTION: You MUST generate a full "day_by_day" array containing EXACTLY {days} objects (from day 1 to day {days}). Do not truncate or shorten it to 1 day.
-CRITICAL INSTRUCTION: Do NOT use generic placeholder names. Research and dynamically provide real, actual, highly-rated hotels, cafes, restaurants, and sights specific to {destination}.
+You are an expert travel consultant for TravelGenie AI. Create a complete, detailed travel itinerary in JSON for a trip to {destination} for exactly {days} days.
+CRITICAL: You MUST generate a full "day_by_day" array containing EXACTLY {days} objects (from Day 1 to Day {days}). Do not truncate or shorten it.
+CRITICAL: Do NOT use generic placeholders. Research and provide real, actual, highly-rated hotels, restaurants, cafes, and spots specific to {destination}.
 
 Travel Dates: From {start_date} to {end_date}.
 Number of Travelers: {num_travelers} person(s).
-Total Manual Budget: {currency} {budget_amount} (roughly {currency} {per_person_budget} per person).
+Total Manual Budget: {currency} {budget_amount} (which is roughly {currency} {per_person_budget} per person).
 Travel Style: {travel_type}.
 Interests: {interests}.
 Dietary Preferences: {dietary}.
@@ -135,7 +135,7 @@ Accessibility/Group Needs: {accessibility}.
 {student_instruction}
 {custom_prompt}
 
-Return valid JSON adhering strictly to this schema:
+Return ONLY valid JSON matching this schema exactly (no markdown fences, pure JSON):
 {{
   "destination": "{destination}",
   "days": {days},
@@ -188,7 +188,7 @@ Return valid JSON adhering strictly to this schema:
   }},
   "hotel_recommendations": [
     {{
-      "name": "Real Hotel Name in {destination}",
+      "name": "Actual Real Hotel Name in {destination}",
       "rating": "4.5 ⭐",
       "price": "{currency} {round(budget_amount * 0.1)}/night",
       "distance": "1.2 km from center",
@@ -196,9 +196,9 @@ Return valid JSON adhering strictly to this schema:
     }}
   ],
   "restaurant_suggestions": {{
-    "breakfast": [{{"name": "Real Cafe in {destination}", "dish": "Local Breakfast Special", "cost": "{currency} 300", "rating": "4.6 ⭐"}}],
-    "lunch": [{{"name": "Real Restaurant in {destination}", "dish": "Local Special Dish", "cost": "{currency} 600", "rating": "4.5 ⭐"}}],
-    "dinner": [{{"name": "Real Dining Spot in {destination}", "dish": "Chef Special", "cost": "{currency} 900", "rating": "4.7 ⭐"}}],
+    "breakfast": [{{"name": "Real Cafe Name", "dish": "Local Breakfast Special", "cost": "{currency} 300", "rating": "4.6 ⭐"}}],
+    "lunch": [{{"name": "Real Restaurant Name", "dish": "Local Special Dish", "cost": "{currency} 600", "rating": "4.5 ⭐"}}],
+    "dinner": [{{"name": "Real Dining Spot Name", "dish": "Chef Special", "cost": "{currency} 900", "rating": "4.7 ⭐"}}],
     "famous_local_dishes": ["Famous Local Delicacy 1", "Famous Local Delicacy 2"],
     "budget_restaurants": [{{"name": "Real Budget Eatery", "cost": "{currency} 200", "rating": "4.3 ⭐"}}],
     "premium_restaurants": [{{"name": "Real Fine Dining Spot", "cost": "{currency} 2200", "rating": "4.8 ⭐"}}]
@@ -210,11 +210,11 @@ Return valid JSON adhering strictly to this schema:
     {{
       "day": 1,
       "date": "{start_date}",
-      "theme": "Arrival & City Exploration",
-      "morning": "Detailed morning activity in {destination}",
-      "lunch": "Lunch at a recommended local restaurant",
-      "afternoon": "Afternoon sightseeing and exploration",
-      "evening": "Evening leisure and market walk",
+      "theme": "Arrival & City Highlights",
+      "morning": "Morning exploration at main city landmark",
+      "lunch": "Lunch at highly-rated local bistro",
+      "afternoon": "Visit prominent cultural spot/museum",
+      "evening": "Sunset walk and local market shopping",
       "estimated_cost": "{currency} {round(budget_amount / days)}"
     }}
   ],
@@ -223,6 +223,7 @@ Return valid JSON adhering strictly to this schema:
   ]
 }}
 """
+
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {
@@ -232,98 +233,21 @@ Return valid JSON adhering strictly to this schema:
 
     response = requests.post(url, headers=headers, json=payload, timeout=60)
     res_data = response.json()
-    
-    try:
-        clean_text = res_data['candidates'][0]['content']['parts'][0]['text'].strip()
-    except Exception:
-        clean_text = "{}"
-
+    clean_text = res_data['candidates'][0]['content']['parts'][0]['text'].strip()
     if clean_text.startswith("```json"):
         clean_text = clean_text[7:]
-    if clean_text.startswith("```"):
-        clean_text = clean_text[3:]
     if clean_text.endswith("```"):
         clean_text = clean_text[:-3]
-    
-    clean_text = clean_text.strip()
-    
-    try:
-        data_obj = json.loads(clean_text)
-        if isinstance(data_obj, dict) and "day_by_day" in data_obj:
-            return clean_text
-    except json.JSONDecodeError:
-        pass
-
-    # Comprehensive dynamic fallback ensuring exact day count matches
-    days_list = []
-    for d in range(1, days + 1):
-        days_list.append({
-            "day": d,
-            "date": start_date,
-            "theme": f"Day {d} Exploration in {destination}",
-            "morning": f"Morning sightseeing and highlights in {destination}",
-            "lunch": f"Lunch at a popular local spot in {destination}",
-            "afternoon": f"Afternoon cultural visit or activity",
-            "evening": f"Evening relaxation and dinner",
-            "estimated_cost": f"{currency} {round(budget_amount / days)}"
-        })
-
-    fallback_data = {
-        "destination": destination,
-        "days": days,
-        "start_date": start_date,
-        "end_date": end_date,
-        "num_travelers": num_travelers,
-        "currency": currency,
-        "total_budget": budget_amount,
-        "per_person_budget": per_person_budget,
-        "estimated_total_cost": f"{currency} {budget_amount}",
-        "currency_info": {"currency_name": currency, "exchange_rate": "1 USD ≈ ₹83.5 INR"},
-        "detailed_weather": {"current_temp": "28 °C", "forecast": "Sunny", "humidity": "60%", "wind_speed": "12 km/h", "rain_chance": "10%", "best_time_to_travel": "October to March"},
-        "budget_breakdown": {
-            "hotel": round(budget_amount * 0.4),
-            "food": round(budget_amount * 0.25),
-            "transport": round(budget_amount * 0.15),
-            "tickets": round(budget_amount * 0.1),
-            "shopping": round(budget_amount * 0.05),
-            "emergency": round(budget_amount * 0.05),
-            "total": budget_amount
-        },
-        "latitude": 20.5937,
-        "longitude": 78.9629,
-        "safety_and_scam_warnings": ["Keep personal belongings secure", "Use official transport"],
-        "transit_guide": {
-            "flight_cost": f"{currency} {round(budget_amount * 0.2)}",
-            "train_cost": f"{currency} {round(budget_amount * 0.08)}",
-            "bus_cost": f"{currency} {round(budget_amount * 0.04)}",
-            "nearest_airport": "Main Airport",
-            "nearest_railway": "Central Station",
-            "local_transport": "Metro, Cabs, Autos"
-        },
-        "ai_suggestions": {"best_month": "October to March", "local_dish_must_try": "Local Specialty", "pro_tip": "Book in advance"},
-        "hotel_recommendations": [{"name": f"Top Hotel in {destination}", "rating": "4.5 ⭐", "price": f"{currency} {round(budget_amount * 0.1)}/night", "distance": "Center", "amenities": "WiFi, AC"}],
-        "restaurant_suggestions": {
-            "breakfast": [{"name": f"Café in {destination}", "dish": "Breakfast", "cost": f"{currency} 300", "rating": "4.6 ⭐"}],
-            "lunch": [{"name": f"Bistro in {destination}", "dish": "Special Thali", "cost": f"{currency} 600", "rating": "4.5 ⭐"}],
-            "dinner": [{"name": f"Diner in {destination}", "dish": "Chef Special", "cost": f"{currency} 900", "rating": "4.7 ⭐"}],
-            "famous_local_dishes": ["Regional Specialty"],
-            "budget_restaurants": [],
-            "premium_restaurants": []
-        },
-        "map_pins": [{"name": "Central Square", "lat": 20.59, "lng": 78.96, "category": "Spot"}],
-        "day_by_day": days_list,
-        "packing_checklist": [{"item": "Comfortable Walking Shoes", "category": "Essential", "checked": False}]
-    }
-    return json.dumps(fallback_data)
+    return clean_text.strip()
 
 # --- Routes ---
 @app.route('/')
 def home():
     popular_destinations = [
-        {"name": "Goa", "country": "India", "rating": "4.8", "best_time": "Nov - Feb", "budget": "₹12,000", "image": "[https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=500&auto=format&fit=crop&q=60](https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=500&auto=format&fit=crop&q=60)"},
-        {"name": "Jaipur", "country": "India", "rating": "4.7", "best_time": "Oct - Mar", "budget": "₹10,000", "image": "[https://images.unsplash.com/photo-1477587458883-47145ed94245?w=500&auto=format&fit=crop&q=60](https://images.unsplash.com/photo-1477587458883-47145ed94245?w=500&auto=format&fit=crop&q=60)"},
-        {"name": "Manali", "country": "India", "rating": "4.9", "best_time": "Oct - Jun", "budget": "₹14,000", "image": "[https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=500&auto=format&fit=crop&q=60](https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=500&auto=format&fit=crop&q=60)"},
-        {"name": "Kerala", "country": "India", "rating": "4.8", "best_time": "Sep - Mar", "budget": "₹15,000", "image": "[https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=500&auto=format&fit=crop&q=60](https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=500&auto=format&fit=crop&q=60)"}
+        {"name": "Goa", "country": "India", "rating": "4.8", "best_time": "Nov - Feb", "budget": "₹12,000", "image": "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=500&auto=format&fit=crop&q=60"},
+        {"name": "Jaipur", "country": "India", "rating": "4.7", "best_time": "Oct - Mar", "budget": "₹10,000", "image": "https://images.unsplash.com/photo-1477587458883-47145ed94245?w=500&auto=format&fit=crop&q=60"},
+        {"name": "Manali", "country": "India", "rating": "4.9", "best_time": "Oct - Jun", "budget": "₹14,000", "image": "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=500&auto=format&fit=crop&q=60"},
+        {"name": "Kerala", "country": "India", "rating": "4.8", "best_time": "Sep - Mar", "budget": "₹15,000", "image": "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=500&auto=format&fit=crop&q=60"}
     ]
     return render_template('index.html', popular=popular_destinations)
 
@@ -350,29 +274,17 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
+        email = request.form.get('email', '').strip() 
         password = request.form.get('password', '')
         
         db = get_db()
-        cursor = db.cursor()
+        user = db.cursor().execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
         
-        cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
-        row = cursor.fetchone()
-        
-        if row:
-            user = dict(row) if hasattr(row, 'keys') else {
-                'id': row[0], 
-                'username': row[1], 
-                'email': row[2], 
-                'password_hash': row[3]
-            }
-            
-            if check_password_hash(user['password_hash'], password):
-                session['user_id'] = user['id']
-                session['username'] = user['username']  
-                flash('Successfully logged in!', 'success')
-                return redirect(url_for('planner'))
-                
+        if user and check_password_hash(user['password_hash'], password):
+            session['user_id'] = user['id']
+            session['username'] = user['username']  
+            flash('Successfully logged in!', 'success')
+            return redirect(url_for('planner'))
         flash('Invalid email or password.', 'danger')
     return render_template('login.html')
 
@@ -411,15 +323,10 @@ def planner():
 
         # --- AI-POWERED BUDGET FEASIBILITY CHECK ---
         try:
-            check_url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=){GEMINI_API_KEY}"
+            check_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
             check_prompt = f"Act as a strict financial travel auditor. Can a trip for {num_travelers} traveler(s) to {destination} for {days} days be reasonably done on a total budget of {currency} {budget_amount}? Answer ONLY 'YES' or 'NO'."
             check_res = requests.post(check_url, headers={"Content-Type": "application/json"}, json={"contents": [{"parts": [{"text": check_prompt}]}]}, timeout=10).json()
-            
-            check_text = "YES"
-            try:
-                check_text = check_res['candidates'][0]['content']['parts'][0]['text'].strip().upper()
-            except (KeyError, IndexError, TypeError):
-                check_text = "YES"
+            check_text = check_res['candidates'][0]['content']['parts'][0]['text'].strip().upper()
             
             if "NO" in check_text:
                 flash(f"⚠️ AI Budget Check Failed: {currency} {budget_amount} is severely underfunded for a {days}-day trip to {destination} for {num_travelers} traveler(s). Please increase your budget!", "danger")
@@ -473,11 +380,7 @@ def itinerary(trip_id):
         flash('Trip not found.', 'danger')
         return redirect(url_for('my_trips'))
 
-    try:
-        itinerary_data = json.loads(trip['itinerary_json'])
-    except Exception:
-        itinerary_data = {}
-
+    itinerary_data = json.loads(trip['itinerary_json'])
     weather_data = get_weather(trip['destination'])
     return render_template('itinerary.html', trip=trip, data=itinerary_data, weather=weather_data)
 
@@ -486,7 +389,7 @@ def update_notes(trip_id):
     if 'user_id' not in session:
         return jsonify({'success': False, 'error': 'Unauthorized'}), 401
     
-    req_data = request.get_json()
+    req_data = request.get_json() or {}
     notes = req_data.get('notes', '')
     
     db = get_db()
