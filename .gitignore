@@ -1,0 +1,23 @@
+# Environment & Secret Variables (CRITICAL)
+.env
+.env.*
+
+# Python Virtual Environments
+venv/
+env/
+ENV/
+
+# Python Compiled Bytecode & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local SQLite Database Files (keep production DB clean)
+*.db
+*.sqlite3
+
+# OS & Editor generated files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
