@@ -225,14 +225,20 @@ Return ONLY valid JSON matching this schema exactly (no markdown fences, pure JS
     headers = {"Content-Type": "application/json"}
     payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
-    response = requests.post(url, headers=headers, json=payload, timeout=60)
-    res_data = response.json()
+    def call_gemini_api(prompt):
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
     
-    # Safe extraction
     try:
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        res_data = response.json()
+        
+        # Safe extraction
         clean_text = res_data['candidates'][0]['content']['parts'][0]['text'].strip()
-    except (KeyError, IndexError, TypeError):
-        clean_text = "{}"
+    except Exception as e:
+        print("API extraction error:", e)
+        return "{}"
 
     # Clean markdown wrappers
     if clean_text.startswith("```json"):
@@ -241,14 +247,18 @@ Return ONLY valid JSON matching this schema exactly (no markdown fences, pure JS
         clean_text = clean_text[3:]
     if clean_text.endswith("```"):
         clean_text = clean_text[:-3]
+    
     clean_text = clean_text.strip()
-
-    # Safe JSON decoding with a fallback so it never crashes with 500 errors
+    
+    # Ensure it's valid JSON text before returning it as a string
     try:
-        return json.loads(clean_text)
+        # Just test load it to make sure it's valid JSON string
+        json.loads(clean_text)
+        return clean_text # Returns as a clean string ready for json.loads where needed
     except json.JSONDecodeError:
-        # If Gemini didn't return valid JSON, wrap the text into a safe dictionary
-        return {"itinerary": clean_text}
+        # If Gemini returned messy text, wrap it into a valid JSON string format
+        import json
+        return json.dumps({"itinerary": clean_text})
 
 # --- Routes ---
 @app.route('/')
