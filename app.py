@@ -404,7 +404,27 @@ def itinerary(trip_id):
         flash('Trip not found.', 'danger')
         return redirect(url_for('my_trips'))
 
-    itinerary_data = json.loads(trip['itinerary_json'])
+    try:
+        itinerary_data = json.loads(trip['itinerary_json'])
+    except Exception:
+        itinerary_data = {}
+
+    # --- SAFETY FALLBACKS FOR MISSING SECTIONS ---
+    itinerary_data.setdefault('hotel_recommendations', [
+        {"name": "Recommended Hotel", "rating": "4.5 ⭐", "price": "Standard", "distance": "Central", "amenities": "WiFi, AC"}
+    ])
+    itinerary_data.setdefault('restaurant_suggestions', {
+        "breakfast": [{"name": "Local Cafe", "dish": "Breakfast Combo", "cost": "Moderate", "rating": "4.5 ⭐"}],
+        "lunch": [{"name": "City Bistro", "dish": "Special Thali", "cost": "Moderate", "rating": "4.5 ⭐"}],
+        "dinner": [{"name": "Sunset Diner", "dish": "Chef Special", "cost": "Moderate", "rating": "4.6 ⭐"}],
+        "famous_local_dishes": ["Regional Specialty"],
+        "budget_restaurants": [],
+        "premium_restaurants": []
+    })
+    itinerary_data.setdefault('packing_checklist', [
+        {"item": "Comfortable Walking Shoes", "category": "Essential", "checked": False}
+    ])
+
     weather_data = get_weather(trip['destination'])
     return render_template('itinerary.html', trip=trip, data=itinerary_data, weather=weather_data)
 
