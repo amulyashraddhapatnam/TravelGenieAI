@@ -227,7 +227,14 @@ Return ONLY valid JSON matching this schema exactly (no markdown fences, pure JS
 
     response = requests.post(url, headers=headers, json=payload, timeout=60)
     res_data = response.json()
-    clean_text = res_data['candidates'][0]['content']['parts'][0]['text'].strip()
+    
+    # Safe extraction for main itinerary response
+    clean_text = ""
+    try:
+        clean_text = res_data['candidates'][0]['content']['parts'][0]['text'].strip()
+    except (KeyError, IndexError, TypeError):
+        clean_text = str(res_data)
+
     if clean_text.startswith("```json"):
         clean_text = clean_text[7:]
     if clean_text.endswith("```"):
@@ -334,7 +341,13 @@ def planner():
             check_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
             check_prompt = f"Act as a strict financial travel auditor. Can a trip for {num_travelers} traveler(s) to {destination} for {days} days be reasonably done on a total budget of {currency} {budget_amount}? Answer ONLY 'YES' or 'NO'."
             check_res = requests.post(check_url, headers={"Content-Type": "application/json"}, json={"contents": [{"parts": [{"text": check_prompt}]}]}, timeout=10).json()
-            check_text = check_res['candidates'][0]['content']['parts'][0]['text'].strip().upper()
+            
+            # Safe extraction for check response
+            check_text = ""
+            try:
+                check_text = check_res['candidates'][0]['content']['parts'][0]['text'].strip().upper()
+            except (KeyError, IndexError, TypeError):
+                check_text = "YES" # Fallback so it doesn't block users if the key is missing
             
             if "NO" in check_text:
                 flash(f"⚠️ AI Budget Check Failed: {currency} {budget_amount} is severely underfunded for a {days}-day trip to {destination} for {num_travelers} traveler(s). Please increase your budget!", "danger")
