@@ -220,60 +220,41 @@ Return ONLY valid JSON matching this schema exactly (no markdown fences, pure JS
   ]
 }}
 """
-# --- AI-POWERED BUDGET FEASIBILITY CHECK ---
-        try:
-            check_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-            check_prompt = f"Act as a strict financial travel auditor. Can a trip for {num_travelers} traveler(s) to {destination} for {days} days be reasonably done on a total budget of {currency} {budget_amount}? Answer ONLY 'YES' or 'NO'."
-            check_res = requests.post(check_url, headers={"Content-Type": "application/json"}, json={"contents": [{"parts": [{"text": check_prompt}]}]}, timeout=10).json()
-            
-            check_text = "YES"
-            try:
-                check_text = check_res['candidates'][0]['content']['parts'][0]['text'].strip().upper()
-            except Exception:
-                pass
-            
-            if "NO" in check_text:
-                flash(f"⚠️ AI Budget Check Failed: {currency} {budget_amount} is severely underfunded for a {days}-day trip to {destination} for {num_travelers} traveler(s). Please increase your budget!", "danger")
-                return redirect(url_for('planner'))
-        except Exception as e:
-            print("Budget check error:", e)
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
-        # --- MAIN ITINERARY GENERATION ---
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-        headers = {"Content-Type": "application/json"}
-        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+    response = requests.post(url, headers=headers, json=payload, timeout=60)
+    res_data = response.json()
+    
+    try:
+        clean_text = res_data['candidates'][0]['content']['parts'][0]['text'].strip()
+    except Exception:
+        clean_text = "{}"
 
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
-        res_data = response.json()
-        
-        try:
-            clean_text = res_data['candidates'][0]['content']['parts'][0]['text'].strip()
-        except Exception:
-            clean_text = "{}"
-
-        if clean_text.startswith("```json"):
-            clean_text = clean_text[7:]
-        if clean_text.startswith("```"):
-            clean_text = clean_text[3:]
-        if clean_text.endswith("```"):
-            clean_text = clean_text[:-3]
-        
-        clean_text = clean_text.strip()
-        
-        # Safely load JSON or wrap text into a dictionary if parsing fails
-        try:
-            itinerary_data = json.loads(clean_text)
-        except json.JSONDecodeError:
-            itinerary_data = {"itinerary": clean_text}
+    if clean_text.startswith("```json"):
+        clean_text = clean_text[7:]
+    if clean_text.startswith("```"):
+        clean_text = clean_text[3:]
+    if clean_text.endswith("```"):
+        clean_text = clean_text[:-3]
+    
+    clean_text = clean_text.strip()
+    
+    try:
+        json.loads(clean_text)
+        return clean_text
+    except json.JSONDecodeError:
+        return json.dumps({"itinerary": clean_text})
 
 # --- Routes ---
 @app.route('/')
 def home():
     popular_destinations = [
-        {"name": "Goa", "country": "India", "rating": "4.8", "best_time": "Nov - Feb", "budget": "₹12,000", "image": "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=500&auto=format&fit=crop&q=60"},
-        {"name": "Jaipur", "country": "India", "rating": "4.7", "best_time": "Oct - Mar", "budget": "₹10,000", "image": "https://images.unsplash.com/photo-1477587458883-47145ed94245?w=500&auto=format&fit=crop&q=60"},
-        {"name": "Manali", "country": "India", "rating": "4.9", "best_time": "Oct - Jun", "budget": "₹14,000", "image": "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=500&auto=format&fit=crop&q=60"},
-        {"name": "Kerala", "country": "India", "rating": "4.8", "best_time": "Sep - Mar", "budget": "₹15,000", "image": "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=500&auto=format&fit=crop&q=60"}
+        {"name": "Goa", "country": "India", "rating": "4.8", "best_time": "Nov - Feb", "budget": "₹12,000", "image": "[https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=500&auto=format&fit=crop&q=60](https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=500&auto=format&fit=crop&q=60)"},
+        {"name": "Jaipur", "country": "India", "rating": "4.7", "best_time": "Oct - Mar", "budget": "₹10,000", "image": "[https://images.unsplash.com/photo-1477587458883-47145ed94245?w=500&auto=format&fit=crop&q=60](https://images.unsplash.com/photo-1477587458883-47145ed94245?w=500&auto=format&fit=crop&q=60)"},
+        {"name": "Manali", "country": "India", "rating": "4.9", "best_time": "Oct - Jun", "budget": "₹14,000", "image": "[https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=500&auto=format&fit=crop&q=60](https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=500&auto=format&fit=crop&q=60)"},
+        {"name": "Kerala", "country": "India", "rating": "4.8", "best_time": "Sep - Mar", "budget": "₹15,000", "image": "[https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=500&auto=format&fit=crop&q=60](https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=500&auto=format&fit=crop&q=60)"}
     ]
     return render_template('index.html', popular=popular_destinations)
 
@@ -306,12 +287,10 @@ def login():
         db = get_db()
         cursor = db.cursor()
         
-        # Fixed query with the correct table name 'users'
         cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
         row = cursor.fetchone()
         
         if row:
-            # Convert row to dictionary safely based on your table structure
             user = dict(row) if hasattr(row, 'keys') else {
                 'id': row[0], 
                 'username': row[1], 
@@ -363,16 +342,15 @@ def planner():
 
         # --- AI-POWERED BUDGET FEASIBILITY CHECK ---
         try:
-            check_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+            check_url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=){GEMINI_API_KEY}"
             check_prompt = f"Act as a strict financial travel auditor. Can a trip for {num_travelers} traveler(s) to {destination} for {days} days be reasonably done on a total budget of {currency} {budget_amount}? Answer ONLY 'YES' or 'NO'."
             check_res = requests.post(check_url, headers={"Content-Type": "application/json"}, json={"contents": [{"parts": [{"text": check_prompt}]}]}, timeout=10).json()
             
-            # Safe extraction for check response
-            check_text = ""
+            check_text = "YES"
             try:
                 check_text = check_res['candidates'][0]['content']['parts'][0]['text'].strip().upper()
             except (KeyError, IndexError, TypeError):
-                check_text = "YES" # Fallback so it doesn't block users if the key is missing
+                check_text = "YES"
             
             if "NO" in check_text:
                 flash(f"⚠️ AI Budget Check Failed: {currency} {budget_amount} is severely underfunded for a {days}-day trip to {destination} for {num_travelers} traveler(s). Please increase your budget!", "danger")
