@@ -121,12 +121,13 @@ def generate_ai_itinerary(destination, days, start_date, end_date, num_travelers
         """
 
     prompt = f"""
-You are an expert travel consultant for TravelGenie AI. Create a customized, destination-specific travel itinerary for a trip to {destination} for {days} days.
-CRITICAL: Do NOT use generic place names like 'Grand City Hotel' or 'Morning Cafe'. You MUST provide real, accurate, and highly-rated hotels, restaurants, street foods, and sight-seeing spots specific to {destination}.
+You are an expert travel consultant for TravelGenie AI. Create a complete, fully detailed travel itinerary in JSON for a trip to {destination} for exactly {days} days.
+CRITICAL INSTRUCTION: You MUST generate a full "day_by_day" array containing EXACTLY {days} objects (from day 1 to day {days}). Do not truncate or shorten it to 1 day.
+CRITICAL INSTRUCTION: Do NOT use generic placeholder names. Research and dynamically provide real, actual, highly-rated hotels, cafes, restaurants, and sights specific to {destination}.
 
 Travel Dates: From {start_date} to {end_date}.
 Number of Travelers: {num_travelers} person(s).
-Total Manual Budget: {currency} {budget_amount} (which is roughly {currency} {per_person_budget} per person).
+Total Manual Budget: {currency} {budget_amount} (roughly {currency} {per_person_budget} per person).
 Travel Style: {travel_type}.
 Interests: {interests}.
 Dietary Preferences: {dietary}.
@@ -134,7 +135,7 @@ Accessibility/Group Needs: {accessibility}.
 {student_instruction}
 {custom_prompt}
 
-Return valid JSON adhering to this exact structure:
+Return valid JSON adhering strictly to this schema:
 {{
   "destination": "{destination}",
   "days": {days},
@@ -187,7 +188,7 @@ Return valid JSON adhering to this exact structure:
   }},
   "hotel_recommendations": [
     {{
-      "name": "Real Hotel in {destination}",
+      "name": "Real Hotel Name in {destination}",
       "rating": "4.5 ⭐",
       "price": "{currency} {round(budget_amount * 0.1)}/night",
       "distance": "1.2 km from center",
@@ -195,25 +196,25 @@ Return valid JSON adhering to this exact structure:
     }}
   ],
   "restaurant_suggestions": {{
-    "breakfast": [{{"name": "Real Cafe", "dish": "Local Specialty", "cost": "{currency} 300", "rating": "4.6 ⭐"}}],
-    "lunch": [{{"name": "Real Bistro", "dish": "Local Meal", "cost": "{currency} 600", "rating": "4.5 ⭐"}}],
-    "dinner": [{{"name": "Real Dining Spot", "dish": "Chef Special", "cost": "{currency} 900", "rating": "4.7 ⭐"}}],
-    "famous_local_dishes": ["Local Dish 1", "Local Dish 2"],
-    "budget_restaurants": [{{"name": "Local Budget Place", "cost": "{currency} 200", "rating": "4.3 ⭐"}}],
-    "premium_restaurants": [{{"name": "Fine Dining Spot", "cost": "{currency} 2200", "rating": "4.8 ⭐"}}]
+    "breakfast": [{{"name": "Real Cafe in {destination}", "dish": "Local Breakfast Special", "cost": "{currency} 300", "rating": "4.6 ⭐"}}],
+    "lunch": [{{"name": "Real Restaurant in {destination}", "dish": "Local Special Dish", "cost": "{currency} 600", "rating": "4.5 ⭐"}}],
+    "dinner": [{{"name": "Real Dining Spot in {destination}", "dish": "Chef Special", "cost": "{currency} 900", "rating": "4.7 ⭐"}}],
+    "famous_local_dishes": ["Famous Local Delicacy 1", "Famous Local Delicacy 2"],
+    "budget_restaurants": [{{"name": "Real Budget Eatery", "cost": "{currency} 200", "rating": "4.3 ⭐"}}],
+    "premium_restaurants": [{{"name": "Real Fine Dining Spot", "cost": "{currency} 2200", "rating": "4.8 ⭐"}}]
   }},
   "map_pins": [
-    {{"name": "Central Square", "lat": 20.59, "lng": 78.96, "category": "Spot"}}
+    {{"name": "Central City Square", "lat": 20.59, "lng": 78.96, "category": "Spot"}}
   ],
   "day_by_day": [
     {{
       "day": 1,
       "date": "{start_date}",
-      "theme": "Arrival & City Highlights",
-      "morning": "Explore popular landmark in {destination}",
-      "lunch": "Lunch at famous local restaurant",
-      "afternoon": "Visit key attractions",
-      "evening": "Sunset walk at local market",
+      "theme": "Arrival & City Exploration",
+      "morning": "Detailed morning activity in {destination}",
+      "lunch": "Lunch at a recommended local restaurant",
+      "afternoon": "Afternoon sightseeing and exploration",
+      "evening": "Evening leisure and market walk",
       "estimated_cost": "{currency} {round(budget_amount / days)}"
     }}
   ],
@@ -246,7 +247,6 @@ Return valid JSON adhering to this exact structure:
     
     clean_text = clean_text.strip()
     
-    # Ensure returned JSON has valid structure
     try:
         data_obj = json.loads(clean_text)
         if isinstance(data_obj, dict) and "day_by_day" in data_obj:
@@ -254,7 +254,20 @@ Return valid JSON adhering to this exact structure:
     except json.JSONDecodeError:
         pass
 
-    # If parsing failed or keys were missing, return a complete valid JSON fallback structure
+    # Comprehensive dynamic fallback ensuring exact day count matches
+    days_list = []
+    for d in range(1, days + 1):
+        days_list.append({
+            "day": d,
+            "date": start_date,
+            "theme": f"Day {d} Exploration in {destination}",
+            "morning": f"Morning sightseeing and highlights in {destination}",
+            "lunch": f"Lunch at a popular local spot in {destination}",
+            "afternoon": f"Afternoon cultural visit or activity",
+            "evening": f"Evening relaxation and dinner",
+            "estimated_cost": f"{currency} {round(budget_amount / days)}"
+        })
+
     fallback_data = {
         "destination": destination,
         "days": days,
@@ -278,38 +291,27 @@ Return valid JSON adhering to this exact structure:
         },
         "latitude": 20.5937,
         "longitude": 78.9629,
-        "safety_and_scam_warnings": ["Keep personal belongings secure in crowded markets", "Use registered cabs"],
+        "safety_and_scam_warnings": ["Keep personal belongings secure", "Use official transport"],
         "transit_guide": {
             "flight_cost": f"{currency} {round(budget_amount * 0.2)}",
             "train_cost": f"{currency} {round(budget_amount * 0.08)}",
             "bus_cost": f"{currency} {round(budget_amount * 0.04)}",
             "nearest_airport": "Main Airport",
-            "nearest_railway": "Central Railway Station",
-            "local_transport": "Metro, Cabs, Auto-rickshaws"
+            "nearest_railway": "Central Station",
+            "local_transport": "Metro, Cabs, Autos"
         },
-        "ai_suggestions": {"best_month": "October to March", "local_dish_must_try": "Specialty Dish", "pro_tip": "Book tickets in advance"},
-        "hotel_recommendations": [{"name": f"Popular Hotel in {destination}", "rating": "4.5 ⭐", "price": f"{currency} {round(budget_amount * 0.1)}/night", "distance": "Center", "amenities": "WiFi, AC"}],
+        "ai_suggestions": {"best_month": "October to March", "local_dish_must_try": "Local Specialty", "pro_tip": "Book in advance"},
+        "hotel_recommendations": [{"name": f"Top Hotel in {destination}", "rating": "4.5 ⭐", "price": f"{currency} {round(budget_amount * 0.1)}/night", "distance": "Center", "amenities": "WiFi, AC"}],
         "restaurant_suggestions": {
-            "breakfast": [{"name": f"{destination} Cafe", "dish": "Local Breakfast", "cost": f"{currency} 300", "rating": "4.6 ⭐"}],
-            "lunch": [{"name": f"{destination} Bistro", "dish": "Special Thali", "cost": f"{currency} 600", "rating": "4.5 ⭐"}],
-            "dinner": [{"name": f"{destination} Diner", "dish": "Chef Special", "cost": f"{currency} 900", "rating": "4.7 ⭐"}],
+            "breakfast": [{"name": f"Café in {destination}", "dish": "Breakfast", "cost": f"{currency} 300", "rating": "4.6 ⭐"}],
+            "lunch": [{"name": f"Bistro in {destination}", "dish": "Special Thali", "cost": f"{currency} 600", "rating": "4.5 ⭐"}],
+            "dinner": [{"name": f"Diner in {destination}", "dish": "Chef Special", "cost": f"{currency} 900", "rating": "4.7 ⭐"}],
             "famous_local_dishes": ["Regional Specialty"],
             "budget_restaurants": [],
             "premium_restaurants": []
         },
         "map_pins": [{"name": "Central Square", "lat": 20.59, "lng": 78.96, "category": "Spot"}],
-        "day_by_day": [
-            {
-                "day": 1,
-                "date": start_date,
-                "theme": "Arrival & City Exploration",
-                "morning": f"Morning walk and exploration around key landmarks in {destination}",
-                "lunch": "Enjoy lunch at a local eatery",
-                "afternoon": "Sightseeing and local cultural spots",
-                "evening": "Sunset walk and leisure time",
-                "estimated_cost": f"{currency} {round(budget_amount / days)}"
-            }
-        ],
+        "day_by_day": days_list,
         "packing_checklist": [{"item": "Comfortable Walking Shoes", "category": "Essential", "checked": False}]
     }
     return json.dumps(fallback_data)
@@ -519,14 +521,15 @@ def optimize_trip(trip_id):
     if not trip:
         return jsonify({'success': False, 'error': 'Trip not found'}), 404
 
-    prompt_modifier = request.json.get('prompt', '')
+    req_data = request.get_json() or {}
+    prompt_modifier = req_data.get('prompt', '')
     
     try:
         raw_json = generate_ai_itinerary(
             trip['destination'], trip['days'], trip['start_date'], trip['end_date'], trip['num_travelers'],
             trip['budget_amount'], trip['currency'], trip['travel_type'],
             trip['interests'], trip['dietary_prefs'], trip['accessibility_prefs'], bool(trip['is_student']),
-            custom_prompt=f"REFINEMENT: {prompt_modifier}"
+            custom_prompt=f"REFINEMENT/MODIFICATION REQUEST: {prompt_modifier}"
         )
         db.cursor().execute('UPDATE trips SET itinerary_json = ? WHERE id = ? AND user_id = ?', (raw_json, trip_id, session['user_id']))
         db.commit()
