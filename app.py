@@ -121,7 +121,9 @@ def generate_ai_itinerary(destination, days, start_date, end_date, num_travelers
         """
 
     prompt = f"""
-You are an expert travel consultant for TravelGenie AI. Create a travel itinerary in JSON for a trip to {destination} for {days} days.
+You are an expert travel consultant for TravelGenie AI. Create a customized, highly specific travel itinerary in JSON for a trip to {destination} for {days} days.
+CRITICAL INSTRUCTION: Do NOT use generic placeholder names. Research and dynamically provide real, actual, highly-rated hotels, cafes, restaurants, and spots specific to {destination} that match the user's budget and interests.
+
 Travel Dates: From {start_date} to {end_date}.
 Number of Travelers: {num_travelers} person(s).
 Total Manual Budget: {currency} {budget_amount} (which is roughly {currency} {per_person_budget} per person).
@@ -185,7 +187,7 @@ Return ONLY valid JSON matching this schema exactly (no markdown fences, pure JS
   }},
   "hotel_recommendations": [
     {{
-      "name": "Grand City Hotel",
+      "name": "Actual Real Hotel Name in {destination}",
       "rating": "4.5 ⭐",
       "price": "{currency} {round(budget_amount * 0.1)}/night",
       "distance": "1.2 km from center",
@@ -193,12 +195,12 @@ Return ONLY valid JSON matching this schema exactly (no markdown fences, pure JS
     }}
   ],
   "restaurant_suggestions": {{
-    "breakfast": [{{"name": "Morning Cafe", "dish": "Fresh Breakfast Set", "cost": "{currency} 300", "rating": "4.6 ⭐"}}],
-    "lunch": [{{"name": "Bistro Delight", "dish": "Local Special Thali/Platter", "cost": "{currency} 600", "rating": "4.5 ⭐"}}],
-    "dinner": [{{"name": "Sunset Dining", "dish": "Chef Special", "cost": "{currency} 900", "rating": "4.7 ⭐"}}],
-    "famous_local_dishes": ["Signature Street Snack", "Traditional Dessert"],
-    "budget_restaurants": [{{"name": "Corner Eatery", "cost": "{currency} 200", "rating": "4.3 ⭐"}}],
-    "premium_restaurants": [{{"name": "Royal Fine Dining", "cost": "{currency} 2200", "rating": "4.8 ⭐"}}]
+    "breakfast": [{{"name": "Real Cafe Name", "dish": "Local Breakfast Special", "cost": "{currency} 300", "rating": "4.6 ⭐"}}],
+    "lunch": [{{"name": "Real Restaurant Name", "dish": "Local Special Dish", "cost": "{currency} 600", "rating": "4.5 ⭐"}}],
+    "dinner": [{{"name": "Real Dining Spot Name", "dish": "Chef Special", "cost": "{currency} 900", "rating": "4.7 ⭐"}}],
+    "famous_local_dishes": ["Famous Local Delicacy 1", "Famous Local Delicacy 2"],
+    "budget_restaurants": [{{"name": "Real Budget Eatery", "cost": "{currency} 200", "rating": "4.3 ⭐"}}],
+    "premium_restaurants": [{{"name": "Real Fine Dining Spot", "cost": "{currency} 2200", "rating": "4.8 ⭐"}}]
   }},
   "map_pins": [
     {{"name": "Central City Square", "lat": 20.59, "lng": 78.96, "category": "Spot"}}
@@ -207,11 +209,11 @@ Return ONLY valid JSON matching this schema exactly (no markdown fences, pure JS
     {{
       "day": 1,
       "date": "{start_date}",
-      "theme": "Arrival & City Highlights",
-      "morning": "Morning exploration at main city landmark",
-      "lunch": "Lunch at highly-rated local bistro",
-      "afternoon": "Visit prominent cultural spot/museum",
-      "evening": "Sunset walk and local market shopping",
+      "theme": "Arrival & City Exploration",
+      "morning": "Detailed morning activity in {destination}",
+      "lunch": "Lunch at a recommended local restaurant",
+      "afternoon": "Afternoon sightseeing and exploration",
+      "evening": "Evening leisure and market walk",
       "estimated_cost": "{currency} {round(budget_amount / days)}"
     }}
   ],
@@ -408,22 +410,6 @@ def itinerary(trip_id):
         itinerary_data = json.loads(trip['itinerary_json'])
     except Exception:
         itinerary_data = {}
-
-    # --- SAFETY FALLBACKS FOR MISSING SECTIONS ---
-    itinerary_data.setdefault('hotel_recommendations', [
-        {"name": "Recommended Hotel", "rating": "4.5 ⭐", "price": "Standard", "distance": "Central", "amenities": "WiFi, AC"}
-    ])
-    itinerary_data.setdefault('restaurant_suggestions', {
-        "breakfast": [{"name": "Local Cafe", "dish": "Breakfast Combo", "cost": "Moderate", "rating": "4.5 ⭐"}],
-        "lunch": [{"name": "City Bistro", "dish": "Special Thali", "cost": "Moderate", "rating": "4.5 ⭐"}],
-        "dinner": [{"name": "Sunset Diner", "dish": "Chef Special", "cost": "Moderate", "rating": "4.6 ⭐"}],
-        "famous_local_dishes": ["Regional Specialty"],
-        "budget_restaurants": [],
-        "premium_restaurants": []
-    })
-    itinerary_data.setdefault('packing_checklist', [
-        {"item": "Comfortable Walking Shoes", "category": "Essential", "checked": False}
-    ])
 
     weather_data = get_weather(trip['destination'])
     return render_template('itinerary.html', trip=trip, data=itinerary_data, weather=weather_data)
