@@ -220,45 +220,51 @@ Return ONLY valid JSON matching this schema exactly (no markdown fences, pure JS
   ]
 }}
 """
+# --- AI-POWERED BUDGET FEASIBILITY CHECK ---
+        try:
+            check_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+            check_prompt = f"Act as a strict financial travel auditor. Can a trip for {num_travelers} traveler(s) to {destination} for {days} days be reasonably done on a total budget of {currency} {budget_amount}? Answer ONLY 'YES' or 'NO'."
+            check_res = requests.post(check_url, headers={"Content-Type": "application/json"}, json={"contents": [{"parts": [{"text": check_prompt}]}]}, timeout=10).json()
+            
+            check_text = "YES"
+            try:
+                check_text = check_res['candidates'][0]['content']['parts'][0]['text'].strip().upper()
+            except Exception:
+                pass
+            
+            if "NO" in check_text:
+                flash(f"⚠️ AI Budget Check Failed: {currency} {budget_amount} is severely underfunded for a {days}-day trip to {destination} for {num_travelers} traveler(s). Please increase your budget!", "danger")
+                return redirect(url_for('planner'))
+        except Exception as e:
+            print("Budget check error:", e)
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-    headers = {"Content-Type": "application/json"}
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        # --- MAIN ITINERARY GENERATION ---
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+        headers = {"Content-Type": "application/json"}
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
-    def call_gemini_api(prompt):
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-    headers = {"Content-Type": "application/json"}
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
-    
-    try:
         response = requests.post(url, headers=headers, json=payload, timeout=60)
         res_data = response.json()
         
-        # Safe extraction
-        clean_text = res_data['candidates'][0]['content']['parts'][0]['text'].strip()
-    except Exception as e:
-        print("API extraction error:", e)
-        return "{}"
+        try:
+            clean_text = res_data['candidates'][0]['content']['parts'][0]['text'].strip()
+        except Exception:
+            clean_text = "{}"
 
-    # Clean markdown wrappers
-    if clean_text.startswith("```json"):
-        clean_text = clean_text[7:]
-    if clean_text.startswith("```"):
-        clean_text = clean_text[3:]
-    if clean_text.endswith("```"):
-        clean_text = clean_text[:-3]
-    
-    clean_text = clean_text.strip()
-    
-    # Ensure it's valid JSON text before returning it as a string
-    try:
-        # Just test load it to make sure it's valid JSON string
-        json.loads(clean_text)
-        return clean_text # Returns as a clean string ready for json.loads where needed
-    except json.JSONDecodeError:
-        # If Gemini returned messy text, wrap it into a valid JSON string format
-        import json
-        return json.dumps({"itinerary": clean_text})
+        if clean_text.startswith("```json"):
+            clean_text = clean_text[7:]
+        if clean_text.startswith("```"):
+            clean_text = clean_text[3:]
+        if clean_text.endswith("```"):
+            clean_text = clean_text[:-3]
+        
+        clean_text = clean_text.strip()
+        
+        # Safely load JSON or wrap text into a dictionary if parsing fails
+        try:
+            itinerary_data = json.loads(clean_text)
+        except json.JSONDecodeError:
+            itinerary_data = {"itinerary": clean_text}
 
 # --- Routes ---
 @app.route('/')
