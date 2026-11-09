@@ -1,0 +1,257 @@
+/* ==========================================================================
+   TravelGenie AI - Soft Glassmorphism & Modern Minimalism Style
+   ========================================================================== */
+
+/* --- Ambient Floating Orbs Background --- */
+body {
+    position: relative;
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+.bg-ambient-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* Light Theme Variables with High Contrast Text */
+:root[data-bs-theme="light"] {
+    --bg-main: #F8FAFC;
+    --card-bg: rgba(255, 255, 255, 0.85);
+    --card-border: rgba(203, 213, 225, 0.9);
+    --text-primary: #090D16; /* Darker, high contrast text */
+    --text-muted: #334155;
+    
+    --brand-primary: #0284C7;
+    --brand-secondary: #2563EB;
+    
+    --planner-header-bg: rgba(224, 242, 254, 0.9);
+    --planner-header-border: #7DD3FC;
+    --planner-header-title: #0369A1;
+    --planner-header-subtitle: #1E293B;
+
+    --accent-glow: rgba(2, 132, 199, 0.15);
+    --glass-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.1);
+}
+
+:root[data-bs-theme="light"] .orb-1 {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 50vw;
+    height: 50vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, rgba(255, 255, 255, 0) 70%);
+    animation: floatOrb 18s ease-in-out infinite alternate;
+}
+
+:root[data-bs-theme="light"] .orb-2 {
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 55vw;
+    height: 55vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(129, 140, 248, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+    animation: floatOrb 22s ease-in-out infinite alternate-reverse;
+}
+
+/* Dark Theme Variables */
+:root[data-bs-theme="dark"] {
+    --bg-main: #0F172A;
+    --card-bg: rgba(30, 41, 59, 0.75);
+    --card-border: rgba(51, 65, 85, 0.7);
+    --text-primary: #F8FAFC;
+    --text-muted: #94A3B8;
+    
+    --brand-primary: #38BDF8;
+    --brand-secondary: #8B5CF6;
+
+    --planner-header-bg: rgba(30, 41, 59, 0.85);
+    --planner-header-border: rgba(56, 189, 248, 0.3);
+    --planner-header-title: #38BDF8;
+    --planner-header-subtitle: #CBD5E1;
+
+    --accent-glow: rgba(56, 189, 248, 0.18);
+    --glass-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
+}
+
+:root[data-bs-theme="dark"] .orb-1 {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 50vw;
+    height: 50vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(15, 118, 110, 0.35) 0%, rgba(0, 0, 0, 0) 70%);
+    animation: floatOrb 18s ease-in-out infinite alternate;
+}
+
+:root[data-bs-theme="dark"] .orb-2 {
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 55vw;
+    height: 55vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(88, 28, 135, 0.35) 0%, rgba(0, 0, 0, 0) 70%);
+    animation: floatOrb 22s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes floatOrb {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(8%, 10%) scale(1.1); }
+    100% { transform: translate(-5%, 5%) scale(0.95); }
+}
+
+/* --- Base Body & Clean Typography --- */
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- High Contrast Brand Elements --- */
+.brand-text {
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #0369A1 0%, #1D4ED8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.brand-text-ai {
+    background: linear-gradient(135deg, #047857 0%, #0F766E 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 900;
+}
+
+[data-bs-theme="dark"] .brand-text {
+    background: linear-gradient(135deg, #38BDF8 0%, #60A5FA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-bs-theme="dark"] .brand-text-ai {
+    background: linear-gradient(135deg, #34D399 0%, #2DD4BF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* --- Navbar Glassmorphism --- */
+.navbar-glass {
+    background: var(--card-bg) !important;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-bottom: 1px solid var(--card-border);
+}
+
+/* --- Soft Glassmorphic Cards Foundation --- */
+.glass-card, 
+.glass-stat-card, 
+.glass-trip-card,
+.itinerary-card {
+    background: var(--card-bg) !important;
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid var(--card-border) !important;
+    border-radius: 1.25rem !important;
+    box-shadow: var(--glass-shadow);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-stat-card:hover, 
+.glass-trip-card:hover,
+.itinerary-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px var(--accent-glow);
+}
+
+/* --- Dedicated Top-Border & Matching Heading Colors --- */
+/* 1. Weather Cards (Blue Theme) */
+.card-weather { border-top: 4px solid #0284C7 !important; }
+.heading-weather { color: #0284C7 !important; font-weight: 700; }
+
+/* 2. Pro Tip / AI Advice Cards (Purple Theme) */
+.card-protip { border-top: 4px solid #7C3AED !important; }
+.heading-protip { color: #7C3AED !important; font-weight: 700; }
+
+/* 3. Budget / Finance Cards (Emerald Green Theme) */
+.card-budget { border-top: 4px solid #059669 !important; }
+.heading-budget { color: #059669 !important; font-weight: 700; }
+
+/* 4. Map & Location Cards (Amber / Orange Theme) */
+.card-map { border-top: 4px solid #D97706 !important; }
+.heading-map { color: #D97706 !important; font-weight: 700; }
+
+/* 5. Destination / General Trip Cards (Indigo / Royal Blue Theme) */
+.card-destination { border-top: 4px solid #4F46E5 !important; }
+.heading-destination { color: #4F46E5 !important; font-weight: 700; }
+
+[data-bs-theme="dark"] .heading-weather { color: #38BDF8 !important; }
+[data-bs-theme="dark"] .heading-protip { color: #A78BFA !important; }
+[data-bs-theme="dark"] .heading-budget { color: #34D399 !important; }
+[data-bs-theme="dark"] .heading-map { color: #FBBF24 !important; }
+[data-bs-theme="dark"] .heading-destination { color: #818CF8 !important; }
+
+/* --- Planner Header Styles --- */
+.planner-header-card {
+    background-color: var(--planner-header-bg) !important;
+    border: 1px solid var(--planner-header-border) !important;
+    border-top: 4px solid #0284C7 !important;
+    border-radius: 1.25rem;
+    box-shadow: var(--glass-shadow);
+}
+
+.planner-title {
+    color: #0369A1 !important;
+    font-weight: 800;
+}
+
+[data-bs-theme="dark"] .planner-title {
+    color: #38BDF8 !important;
+}
+
+.planner-subtitle {
+    color: var(--text-muted) !important;
+    font-weight: 500;
+}
+
+/* --- Form Controls --- */
+.form-label {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+}
+
+.form-control, .form-select {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--text-primary) !important;
+    border-radius: 0.75rem;
+}
+
+.form-control::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.8;
+}
+
+/* --- Gradient Buttons --- */
+.btn-gradient-primary {
+    background: linear-gradient(135deg, #0284C7, #2563EB) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    border-radius: 50rem;
+}
+
+.btn-gradient-primary:hover {
+    opacity: 0.92;
+}
