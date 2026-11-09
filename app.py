@@ -268,19 +268,18 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Normalize email to lowercase and strip whitespace
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         
         db = get_db()
         cursor = db.cursor()
         
-        # Execute query
-        cursor.execute('SELECT * FROM email = ?', (email,)) # or WHERE email = ?
+        # Fixed query with the correct table name 'users'
+        cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
         row = cursor.fetchone()
         
         if row:
-            # Safely convert row to a dictionary regardless of how sqlite3 is configured
+            # Convert row to dictionary safely based on your table structure
             user = dict(row) if hasattr(row, 'keys') else {
                 'id': row[0], 
                 'username': row[1], 
@@ -288,7 +287,6 @@ def login():
                 'password_hash': row[3]
             }
             
-            # Verify password hash
             if check_password_hash(user['password_hash'], password):
                 session['user_id'] = user['id']
                 session['username'] = user['username']  
