@@ -268,17 +268,33 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form.get('email', '').strip() 
+        # Normalize email to lowercase and strip whitespace
+        email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         
         db = get_db()
-        user = db.cursor().execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
+        cursor = db.cursor()
         
-        if user and check_password_hash(user['password_hash'], password):
-            session['user_id'] = user['id']
-            session['username'] = user['username']  
-            flash('Successfully logged in!', 'success')
-            return redirect(url_for('planner'))
+        # Execute query
+        cursor.execute('SELECT * FROM email = ?', (email,)) # or WHERE email = ?
+        row = cursor.fetchone()
+        
+        if row:
+            # Safely convert row to a dictionary regardless of how sqlite3 is configured
+            user = dict(row) if hasattr(row, 'keys') else {
+                'id': row[0], 
+                'username': row[1], 
+                'email': row[2], 
+                'password_hash': row[3]
+            }
+            
+            # Verify password hash
+            if check_password_hash(user['password_hash'], password):
+                session['user_id'] = user['id']
+                session['username'] = user['username']  
+                flash('Successfully logged in!', 'success')
+                return redirect(url_for('planner'))
+                
         flash('Invalid email or password.', 'danger')
     return render_template('login.html')
 
